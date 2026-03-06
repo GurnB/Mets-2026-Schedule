@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NY Mets 2026 Schedule</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family:Arial,Helvetica,sans-serif;
+margin:0;
+background:#f4f6fb;
+}
+
+header{
+background:#002D72;
+color:white;
+padding:18px;
+text-align:center;
+}
+
+.month-title{
+width:95%;
+margin:25px auto 10px;
+font-size:22px;
+font-weight:bold;
+}
+
+.calendar{
+width:95%;
+margin:auto;
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:4px;
+}
+
+.day-header{
+background:#ddd;
+text-align:center;
+padding:6px;
+font-weight:bold;
+}
+
+.day{
+background:white;
+min-height:95px;
+padding:4px;
+border-radius:4px;
+position:relative;
+}
+
+.home{ background:#cfe0ff; }
+.away{ background:#eef2ff; }
+
+.day:hover{
+transform:scale(1.03);
+box-shadow:0 0 6px rgba(0,0,0,.2);
+}
+
+.date{
+font-size:12px;
+font-weight:bold;
+}
+
+.teamlogo{
+width:30px;
+height:30px;
+display:block;
+margin:auto;
+}
+
+.opponent-name{
+font-size:11px;
+text-align:center;
+}
+
+.day a{
+display:block;
+height:100%;
+width:100%;
+text-decoration:none;
+color:black;
+}
+
+/* Tooltip */
+
+.tooltip{
+display:none;
+position:absolute;
+background:#222;
+color:white;
+padding:8px;
+font-size:10px;
+border-radius:6px;
+width:160px;
+top:5px;
+left:5px;
+z-index:10;
+}
+
+.day:hover .tooltip{
+display:block;
+}
+
+/* Mobile layout */
+
+@media (max-width:700px){
+
+.calendar{
+grid-template-columns:repeat(2,1fr);
+}
+
+.day-header{
+display:none;
+}
+
+.month-title{
+text-align:center;
+}
+
+.day{
+min-height:110px;
+}
+</style>
+
+}
+
+
+</head>
+
+<body>
+
+<header>
+<h1>New York Mets 2026 Schedule</h1>
+</header>
+
+<div id="calendar"></div>
+
+<script>
+
+const TEAM_ID=121;
+
+async function loadSchedule(){
+
+const url="https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&season=2026&gameType=R&hydrate=probablePitcher";
+//const url="https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&season=2026";  // use this instead to show Spring Training games also.
+
+
+const response=await fetch(url);
+const data=await response.json();
+
+const games=[];
+
+data.dates.forEach(date=>{
+
+date.games.forEach(game=>{
+
+const isHome=game.teams.home.team.id===TEAM_ID;
+
+const opponent=isHome ? game.teams.away.team : game.teams.home.team;
+
+const oppPitcher=game.teams.away.probablePitcher?.fullName || "TBD";
+const metsPitcher=game.teams.home.probablePitcher?.fullName || "TBD";
+
+games.push({
+
+date:game.gameDate.substring(0,10),
+
+time:new Date(game.gameDate).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+
+opponent:opponent.name,
+
+logo:`https://www.mlbstatic.com/team-logos/${opponent.id}.svg`,
+
+home:isHome,
+
+gameday:`https://www.mlb.com/gameday/${game.gamePk}`,
+
+pitchers: isHome ?
+`${metsPitcher} vs ${oppPitcher}` :
+`${oppPitcher} vs ${metsPitcher}`
+
+});
+
+});
+
+});
+
+return games;
+
+}
+
+function buildMonth(year,month,games){
+
+const daysOfWeek=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+const container=document.getElementById("calendar");
+
+const title=document.createElement("div");
+title.className="month-title";
+title.innerText=new Date(year,month).toLocaleString('default',{month:'long',year:'numeric'});
+container.appendChild(title);
+
+const grid=document.createElement("div");
+grid.className="calendar";
+
+daysOfWeek.forEach(day=>{
+const el=document.createElement("div");
+el.className="day-header";
+el.innerText=day;
+grid.appendChild(el);
+});
+
+const firstDay=new Date(year,month,1).getDay();
+const daysInMonth=new Date(year,month+1,0).getDate();
+
+for(let i=0;i<firstDay;i++){
+grid.appendChild(document.createElement("div"));
+}
+
+for(let d=1;d<=daysInMonth;d++){
+
+const cell=document.createElement("div");
+cell.className="day";
+
+const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+const game=games.find(g=>g.date===dateStr);
+
+if(game){
+
+cell.classList.add(game.home?"home":"away");
+
+cell.innerHTML=`
+
+<a href="${game.gameday}" target="_blank">
+
+<div class="date">${d}</div>
+
+<img src="${game.logo}" class="teamlogo">
+
+<div class="opponent-name">${game.opponent}</div>
+
+<div class="tooltip">
+
+<strong>${game.time}</strong><br>
+
+Pitchers:<br>
+
+${game.pitchers}
+
+</div>
+
+</a>
+
+`;
+
+}else{
+
+cell.innerHTML=`<div class="date">${d}</div>`;
+
+}
+
+grid.appendChild(cell);
+
+}
+
+container.appendChild(grid);
+
+}
+
+async function init(){
+
+const games=await loadSchedule();
+
+for(let m=2;m<=9;m++){   // March–October
+buildMonth(2026,m,games);
+}
+
+}
+
+init();
+
+</script>
+
+</body>
+</html>
