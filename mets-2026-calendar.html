@@ -21,6 +21,11 @@ padding:18px;
 text-align:center;
 }
 
+#record{
+font-size:16px;
+margin-top:6px;
+}
+
 .month-title{
 width:95%;
 margin:25px auto 10px;
@@ -45,7 +50,7 @@ font-weight:bold;
 
 .day{
 background:white;
-min-height:95px;
+min-height:105px;
 padding:4px;
 border-radius:4px;
 position:relative;
@@ -54,19 +59,14 @@ position:relative;
 .home{ background:#cfe0ff; }
 .away{ background:#eef2ff; }
 
-.day:hover{
-transform:scale(1.03);
-box-shadow:0 0 6px rgba(0,0,0,.2);
-}
-
 .date{
 font-size:12px;
 font-weight:bold;
 }
 
 .teamlogo{
-width:30px;
-height:30px;
+width:28px;
+height:28px;
 display:block;
 margin:auto;
 }
@@ -74,6 +74,21 @@ margin:auto;
 .opponent-name{
 font-size:11px;
 text-align:center;
+}
+
+.score{
+text-align:center;
+font-size:12px;
+font-weight:bold;
+margin-top:2px;
+}
+
+.win{
+color:#0a7a1c;
+}
+
+.loss{
+color:#c62828;
 }
 
 .day a{
@@ -92,11 +107,11 @@ position:absolute;
 background:#222;
 color:white;
 padding:8px;
-font-size:10px;
+font-size:12px;
 border-radius:6px;
-width:160px;
-top:5px;
-left:5px;
+width:170px;
+top:6px;
+left:6px;
 z-index:10;
 }
 
@@ -104,7 +119,7 @@ z-index:10;
 display:block;
 }
 
-/* Mobile layout */
+/* Mobile */
 
 @media (max-width:700px){
 
@@ -120,13 +135,9 @@ display:none;
 text-align:center;
 }
 
-.day{
-min-height:110px;
 }
+
 </style>
-
-}
-
 
 </head>
 
@@ -134,6 +145,7 @@ min-height:110px;
 
 <header>
 <h1>New York Mets 2026 Schedule</h1>
+<div id="record">Loading record...</div>
 </header>
 
 <div id="calendar"></div>
@@ -144,12 +156,13 @@ const TEAM_ID=121;
 
 async function loadSchedule(){
 
+//const url="https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&season=2026&hydrate=probablePitcher";
 const url="https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&season=2026&gameType=R&hydrate=probablePitcher";
-//const url="https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&season=2026";  // use this instead to show Spring Training games also.
-
-
 const response=await fetch(url);
 const data=await response.json();
+
+let wins=0;
+let losses=0;
 
 const games=[];
 
@@ -158,8 +171,27 @@ data.dates.forEach(date=>{
 date.games.forEach(game=>{
 
 const isHome=game.teams.home.team.id===TEAM_ID;
-
 const opponent=isHome ? game.teams.away.team : game.teams.home.team;
+
+const metsScore=isHome ? game.teams.home.score : game.teams.away.score;
+const oppScore=isHome ? game.teams.away.score : game.teams.home.score;
+
+let result="";
+let resultClass="";
+
+if(game.status.detailedState==="Final"){
+
+result=`${metsScore}-${oppScore}`;
+
+if(metsScore>oppScore){
+wins++;
+resultClass="win";
+}else{
+losses++;
+resultClass="loss";
+}
+
+}
 
 const oppPitcher=game.teams.away.probablePitcher?.fullName || "TBD";
 const metsPitcher=game.teams.home.probablePitcher?.fullName || "TBD";
@@ -167,26 +199,27 @@ const metsPitcher=game.teams.home.probablePitcher?.fullName || "TBD";
 games.push({
 
 date:game.gameDate.substring(0,10),
-
 time:new Date(game.gameDate).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
 
 opponent:opponent.name,
-
 logo:`https://www.mlbstatic.com/team-logos/${opponent.id}.svg`,
-
 home:isHome,
-
 gameday:`https://www.mlb.com/gameday/${game.gamePk}`,
 
-pitchers: isHome ?
+pitchers:isHome ?
 `${metsPitcher} vs ${oppPitcher}` :
-`${oppPitcher} vs ${metsPitcher}`
+`${oppPitcher} vs ${metsPitcher}`,
+
+result:result,
+resultClass:resultClass
 
 });
 
 });
 
 });
+
+document.getElementById("record").innerText=`Record: ${wins}-${losses}`;
 
 return games;
 
@@ -195,7 +228,6 @@ return games;
 function buildMonth(year,month,games){
 
 const daysOfWeek=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
 const container=document.getElementById("calendar");
 
 const title=document.createElement("div");
@@ -226,7 +258,6 @@ const cell=document.createElement("div");
 cell.className="day";
 
 const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
 const game=games.find(g=>g.date===dateStr);
 
 if(game){
@@ -243,12 +274,14 @@ cell.innerHTML=`
 
 <div class="opponent-name">${game.opponent}</div>
 
+<div class="score ${game.resultClass}">
+${game.result}
+</div>
+
 <div class="tooltip">
 
 <strong>${game.time}</strong><br>
-
 Pitchers:<br>
-
 ${game.pitchers}
 
 </div>
@@ -275,7 +308,7 @@ async function init(){
 
 const games=await loadSchedule();
 
-for(let m=2;m<=9;m++){   // March–October
+for(let m=2;m<=9;m++){
 buildMonth(2026,m,games);
 }
 
