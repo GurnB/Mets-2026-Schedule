@@ -198,8 +198,12 @@ const metsPitcher=game.teams.home.probablePitcher?.fullName || "TBD";
 
 games.push({
 
-date:game.gameDate.substring(0,10),
-time:new Date(game.gameDate).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+date:game.officialDate,
+time:new Date(game.gameDate).toLocaleTimeString('en-US',{
+timeZone:'America/New_York',
+hour:'numeric',
+minute:'2-digit'
+}),
 
 opponent:opponent.name,
 logo:`https://www.mlbstatic.com/team-logos/${opponent.id}.svg`,
@@ -280,7 +284,7 @@ ${game.result}
 
 <div class="tooltip">
 
-<strong>${game.time}</strong><br>
+<strong>${game.time} ET</strong><br>
 Pitchers:<br>
 ${game.pitchers}
 
