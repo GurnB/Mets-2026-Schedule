@@ -21,3 +21,5 @@ const TEAM_ID=121;
 
 To display any othe MLB team. [team-information.md
 ](https://github.com/jasonlttl/gameday-api-docs/blob/master/team-information.md)
+
+<img width="1848" height="689" alt="met schedule" src="https://github.com/user-attachments/assets/8fc1f366-5f09-4638-958e-ef50687db7b7" />
